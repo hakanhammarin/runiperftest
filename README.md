@@ -21,7 +21,7 @@ start iperf on each host:
 iperf -s &
 
 
-RUN:
+RUN RUN:
 ./runiperftest.sh 
 
 
