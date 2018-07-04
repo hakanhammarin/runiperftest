@@ -20,6 +20,8 @@ chmod +x runiperftest.sh
 start iperf on each host:
 iperf -s &
 
+
+RUN:
 ./runiperftest.sh 
 
 
