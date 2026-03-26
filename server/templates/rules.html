@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Firewall Rules{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="text-info mb-0"><i class="bi bi-funnel me-2"></i>Firewall Rules</h4>
+  <div class="btn-group btn-group-sm">
+    <a href="/rules?status=all"       class="btn {% if current_status=='all'       %}btn-secondary{% else %}btn-outline-secondary{% endif %}">All</a>
+    <a href="/rules?status=deploying" class="btn {% if current_status=='deploying' %}btn-warning{% else %}btn-outline-secondary{% endif %}">Deploying</a>
+    <a href="/rules?status=deployed"  class="btn {% if current_status=='deployed'  %}btn-success{% else %}btn-outline-secondary{% endif %}">Deployed</a>
+    <a href="/rules?status=revoked"   class="btn {% if current_status=='revoked'   %}btn-danger{% else %}btn-outline-secondary{% endif %}">Revoked</a>
+    <a href="/rules?status=error"     class="btn {% if current_status=='error'     %}btn-danger{% else %}btn-outline-secondary{% endif %}">Error</a>
+  </div>
+</div>
+
+<div class="card border-secondary">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover table-sm mb-0 small align-middle">
+      <thead class="text-secondary">
+        <tr>
+          <th>GUID</th>
+          <th>Host</th>
+          <th>Name</th>
+          <th>Dir</th>
+          <th>Action</th>
+          <th>Proto</th>
+          <th>Source</th>
+          <th>Destination</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Deployed</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rules %}
+        <tr>
+          <td class="font-monospace text-secondary" style="font-size:.7rem" title="{{ r.guid }}">
+            {{ r.guid[:8] }}…
+          </td>
+          <td>{{ r.hostname }}</td>
+          <td>{{ r.name }}</td>
+          <td>
+            {% if r.direction == 'in' %}
+              <span class="badge bg-info text-dark">IN</span>
+            {% else %}
+              <span class="badge bg-primary">OUT</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.action == 'allow' %}
+              <span class="badge bg-success">ALLOW</span>
+            {% else %}
+              <span class="badge bg-danger">DENY</span>
+            {% endif %}
+          </td>
+          <td><span class="badge bg-secondary">{{ r.protocol }}</span></td>
+          <td class="font-monospace">{{ r.src_ip or "*" }}:{{ r.src_port or "*" }}</td>
+          <td class="font-monospace">{{ r.dst_ip or "*" }}:{{ r.dst_port or "*" }}</td>
+          <td>
+            {% if r.status == 'deploying' %}
+              <span class="badge bg-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i>deploying</span>
+            {% elif r.status == 'deployed' %}
+              <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>deployed</span>
+            {% elif r.status == 'revoked' %}
+              <span class="badge bg-secondary">revoked</span>
+            {% elif r.status == 'error' %}
+              <span class="badge bg-danger" title="{{ r.error_msg }}">error</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ r.status }}</span>
+            {% endif %}
+          </td>
+          <td class="text-secondary">{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="text-secondary">{{ r.deployed_at.strftime('%H:%M') if r.deployed_at else "—" }}</td>
+          <td>
+            {% if r.status != 'revoked' %}
+            <form method="post" action="/rules/{{ r.id }}/revoke" class="d-inline"
+                  onsubmit="return confirm('Revoke rule {{ r.guid[:8] }}?')">
+              <button class="btn btn-xs btn-danger py-0 px-1" type="submit">
+                <i class="bi bi-trash3"></i> Revoke
+              </button>
+            </form>
+            {% endif %}
+            {% if r.status in ('error', 'revoked') %}
+            <form method="post" action="/rules/{{ r.id }}/redeploy" class="d-inline">
+              <button class="btn btn-xs btn-outline-info py-0 px-1" type="submit">
+                <i class="bi bi-arrow-repeat"></i> Redeploy
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="12" class="text-center text-secondary py-4">No rules</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

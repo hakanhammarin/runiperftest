@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Sessions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="text-info mb-0"><i class="bi bi-list-check me-2"></i>Session Review</h4>
+  <div class="btn-group btn-group-sm">
+    <a href="/sessions?status=pending"  class="btn {% if current_status=='pending'  %}btn-warning{% else %}btn-outline-secondary{% endif %}">Pending</a>
+    <a href="/sessions?status=approved" class="btn {% if current_status=='approved' %}btn-success{% else %}btn-outline-secondary{% endif %}">Approved</a>
+    <a href="/sessions?status=denied"   class="btn {% if current_status=='denied'   %}btn-danger{% else %}btn-outline-secondary{% endif %}">Denied</a>
+    <a href="/sessions?status=all"      class="btn {% if current_status=='all'      %}btn-secondary{% else %}btn-outline-secondary{% endif %}">All</a>
+  </div>
+</div>
+
+<div class="card border-secondary">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover table-sm mb-0 small align-middle">
+      <thead class="text-secondary">
+        <tr>
+          <th>#</th>
+          <th>Host</th>
+          <th>Proto</th>
+          <th>Source IP:Port</th>
+          <th>Destination IP:Port</th>
+          <th>Process</th>
+          <th>State</th>
+          <th>Hits</th>
+          <th>First Seen</th>
+          <th>Last Seen</th>
+          <th>Status</th>
+          {% if current_status == 'pending' %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td class="text-secondary">{{ s.id }}</td>
+          <td>
+            {% set host = hosts.get(s.hostname) %}
+            {% if host and host.os_type == 'windows' %}
+              <i class="bi bi-windows text-info me-1"></i>
+            {% else %}
+              <i class="bi bi-terminal text-success me-1"></i>
+            {% endif %}
+            {{ s.hostname }}
+          </td>
+          <td><span class="badge bg-secondary">{{ s.protocol }}</span></td>
+          <td class="font-monospace">{{ s.src_ip }}:{{ s.src_port }}</td>
+          <td class="font-monospace">{{ s.dst_ip }}:{{ s.dst_port }}</td>
+          <td class="text-secondary">{{ s.process or "—" }}</td>
+          <td class="text-secondary">{{ s.state or "—" }}</td>
+          <td>{{ s.hit_count }}</td>
+          <td class="text-secondary">{{ s.first_seen.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="text-secondary">{{ s.last_seen.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            {% if s.review_status == 'pending' %}
+              <span class="badge bg-warning text-dark">pending</span>
+            {% elif s.review_status == 'approved' %}
+              <span class="badge bg-success">approved</span>
+            {% else %}
+              <span class="badge bg-danger">denied</span>
+            {% endif %}
+          </td>
+          {% if current_status == 'pending' %}
+          <td>
+            <!-- Approve modal trigger -->
+            <button class="btn btn-xs btn-success py-0 px-1"
+                    data-bs-toggle="modal"
+                    data-bs-target="#approveModal"
+                    data-sid="{{ s.id }}"
+                    data-proto="{{ s.protocol }}"
+                    data-src="{{ s.src_ip }}:{{ s.src_port }}"
+                    data-dst="{{ s.dst_ip }}:{{ s.dst_port }}">
+              <i class="bi bi-check-lg"></i> Allow
+            </button>
+            <form method="post" action="/sessions/{{ s.id }}/deny" class="d-inline">
+              <button class="btn btn-xs btn-danger py-0 px-1" type="submit">
+                <i class="bi bi-x-lg"></i> Deny
+              </button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="12" class="text-center text-secondary py-4">No sessions</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Approve modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h6 class="modal-title text-success"><i class="bi bi-shield-check me-2"></i>Approve Session</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="approveForm" method="post">
+        <div class="modal-body small">
+          <p class="text-secondary mb-2" id="approveDesc"></p>
+          <div class="mb-2">
+            <label class="form-label text-secondary">Action</label>
+            <select name="action" class="form-select form-select-sm bg-dark text-light border-secondary">
+              <option value="allow" selected>Allow</option>
+              <option value="deny">Deny</option>
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label text-secondary">Direction</label>
+            <select name="direction" class="form-select form-select-sm bg-dark text-light border-secondary">
+              <option value="out" selected>Outbound</option>
+              <option value="in">Inbound</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-success">Create Rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('approveModal').addEventListener('show.bs.modal', function(e) {
+  const btn = e.relatedTarget;
+  const sid   = btn.getAttribute('data-sid');
+  const proto = btn.getAttribute('data-proto');
+  const src   = btn.getAttribute('data-src');
+  const dst   = btn.getAttribute('data-dst');
+  document.getElementById('approveDesc').textContent = `${proto.toUpperCase()} ${src} → ${dst}`;
+  document.getElementById('approveForm').action = `/sessions/${sid}/approve`;
+});
+</script>
+{% endblock %}

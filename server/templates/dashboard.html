@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h4 class="mb-3 text-info"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
+
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card bg-secondary-subtle border-secondary text-center py-3">
+      <div class="fs-1 fw-bold text-warning">{{ pending }}</div>
+      <div class="text-secondary small">Pending Review</div>
+      <a href="/sessions?status=pending" class="stretched-link"></a>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card bg-secondary-subtle border-secondary text-center py-3">
+      <div class="fs-1 fw-bold text-success">{{ approved }}</div>
+      <div class="text-secondary small">Approved Sessions</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card bg-secondary-subtle border-secondary text-center py-3">
+      <div class="fs-1 fw-bold text-info">{{ deployed_rules }}</div>
+      <div class="text-secondary small">Deployed Rules</div>
+      <a href="/rules?status=deployed" class="stretched-link"></a>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card bg-secondary-subtle border-secondary text-center py-3">
+      <div class="fs-1 fw-bold text-danger">{{ denied }}</div>
+      <div class="text-secondary small">Denied Sessions</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Hosts -->
+  <div class="col-md-4">
+    <div class="card border-secondary h-100">
+      <div class="card-header border-secondary text-secondary small fw-semibold">
+        <i class="bi bi-pc-display me-1"></i>Hosts
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for host in hosts %}
+        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+          <span>
+            {% if host.os_type == 'windows' %}
+              <i class="bi bi-windows text-info me-1"></i>
+            {% else %}
+              <i class="bi bi-terminal text-success me-1"></i>
+            {% endif %}
+            {{ host.hostname }}
+          </span>
+          <span>
+            <span class="badge {% if host.online %}bg-success{% else %}bg-secondary{% endif %} me-1">
+              {{ "online" if host.online else "offline" }}
+            </span>
+            <span class="text-secondary" style="font-size:.75rem">{{ host.last_seen.strftime('%H:%M') }}</span>
+          </span>
+        </li>
+        {% else %}
+        <li class="list-group-item bg-transparent text-secondary small">No hosts yet</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Recent sessions -->
+  <div class="col-md-8">
+    <div class="card border-secondary">
+      <div class="card-header border-secondary text-secondary small fw-semibold">
+        <i class="bi bi-activity me-1"></i>Recent Sessions
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-dark table-hover mb-0 small">
+          <thead class="text-secondary">
+            <tr>
+              <th>Host</th><th>Proto</th><th>Source</th><th>Destination</th><th>Status</th><th>Last Seen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in recent_sessions %}
+            <tr>
+              <td>{{ s.hostname }}</td>
+              <td><span class="badge bg-secondary">{{ s.protocol }}</span></td>
+              <td>{{ s.src_ip }}:{{ s.src_port }}</td>
+              <td>{{ s.dst_ip }}:{{ s.dst_port }}</td>
+              <td>
+                {% if s.review_status == 'pending' %}
+                  <span class="badge bg-warning text-dark">pending</span>
+                {% elif s.review_status == 'approved' %}
+                  <span class="badge bg-success">approved</span>
+                {% else %}
+                  <span class="badge bg-danger">denied</span>
+                {% endif %}
+              </td>
+              <td class="text-secondary">{{ s.last_seen.strftime('%H:%M:%S') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-secondary">No sessions yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Auto-refresh every 15 seconds
+  setTimeout(() => location.reload(), 15000);
+</script>
+{% endblock %}
