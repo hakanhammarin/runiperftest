@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NetMon – {% block title %}{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold text-info" href="/"><i class="bi bi-shield-check me-2"></i>NetMon</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link {% if request.url.path == '/' %}active{% endif %}" href="/">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if '/sessions' in request.url.path %}active{% endif %}" href="/sessions">
+            <i class="bi bi-list-check me-1"></i>Sessions
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if '/rules' in request.url.path %}active{% endif %}" href="/rules">
+            <i class="bi bi-funnel me-1"></i>Firewall Rules
+          </a>
+        </li>
+      </ul>
+      <span class="navbar-text text-secondary small">
+        <i class="bi bi-circle-fill text-success me-1" style="font-size:.55rem"></i>Live
+      </span>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid py-3 px-4">
+  {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

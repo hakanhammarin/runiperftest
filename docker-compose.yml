@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  # -------------------------------------------------------------------
+  # MQTT Broker (Eclipse Mosquitto)
+  # -------------------------------------------------------------------
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: netmon-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"   # MQTT
+      - "9001:9001"   # WebSocket (optional)
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt_data:/mosquitto/data
+      - mqtt_log:/mosquitto/log
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "hc", "-W", "3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # -------------------------------------------------------------------
+  # NetMon Server (Web UI + MQTT subscriber + SQLite)
+  # -------------------------------------------------------------------
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: netmon-server
+    restart: unless-stopped
+    depends_on:
+      mqtt:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      MQTT_HOST: mqtt
+      MQTT_PORT: "1883"
+      MQTT_USER: "${MQTT_USER:-}"
+      MQTT_PASS: "${MQTT_PASS:-}"
+      DATABASE_URL: "sqlite:////data/netmon.db"
+      WEB_HOST: "0.0.0.0"
+      WEB_PORT: "8000"
+      SECRET_KEY: "${SECRET_KEY:-change-me-in-production}"
+    volumes:
+      - netmon_data:/data
+
+volumes:
+  mqtt_data:
+  mqtt_log:
+  netmon_data:
